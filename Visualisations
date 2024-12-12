@@ -1,0 +1,49 @@
+library(ggplot2)
+hist1<- ggplot(uk_df_clean)+
+  geom_jitter(aes(y = log(K_all_touch +1), x = P_age, colour = IMDD), height = 0.2)+
+xlab("Participant Age (years)")+
+  ylab("log(Number of touch contacts per day +1)") +
+  ggtitle("Variation in Number of Touch Contacts by Participant Age \nand Index of Multiple Deprivation Decile")+
+    labs(color ='Index of Multiple \nDeprivation Decile') +
+  scale_color_gradient(low="blue", high="red")
+  
+hist1
+
+  ggplot(uk_df_clean)+
+  geom_jitter(aes(x=P_new_occupation_str, y=log(K_all_touch +1), colour =P_age, alpha = 0.1), height = 0.2, width = 0.25)+
+  theme(axis.text.x = element_text(angle = 90)) +
+  xlab("Occupation Category")+
+  ylab("log(touch contacts per day +1)") +
+  ggtitle("Variation in Number of Touch Contacts by Occupation \nand Age") +
+    labs(color ='Participant Age (years)')
+  
+  hist2<- ggplot(uk_df_clean)+
+  geom_jitter(aes(y = log(K_all_touch +1), x = P_age, colour = sex), height = 0.2)+
+xlab("Participant Age (years)")+
+  ylab("log(Number of touch contacts per day +1)") +
+  ggtitle("Variation in Number of Touch contacts by Age and Sex")
+
+  hist2
+  
+  hist<- ggplot(uk_df_clean)+
+  geom_jitter(aes(y = log(K_all_touch +1), x = P_age, colour = P_household_size), height = 0.2)+
+xlab("Participant Age (years)")+
+  ylab("log(Number of touch contacts per day +1)") +
+  ggtitle("Variation in Number of Touch Contacts Age and \nHousehold Size") +
+    labs(color ='Number of \nOccupants in\nHousehold') 
+  
+
+  hist +scale_color_gradient(low="blue", high="red")
+  
+  ggplot(age_size)+
+  geom_point(aes(y=mean_touch, x=P_age )) +
+  xlab("Participant Age (years)")+
+  ylab("Mean Number of touch contacts per day") +
+  ggtitle("Mean Number of People Touched by Age")
+  
+  ggplot(uk_df_clean)+
+  geom_histogram(aes(log(K_all_touch +1)), binwidth =0.5)+
+xlab("log (Number of Touch Contacts per Day +1)")+
+  ylab("Count") +
+  ggtitle("Distribution of Touch Contacts per Day")
+  
