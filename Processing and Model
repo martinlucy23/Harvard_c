@@ -1,0 +1,295 @@
+alldata = read.csv("scs_extra+IMD_(1).csv")
+uk_df <- alldata[alldata$P_UK == 1, ]
+
+# Create a new column 'C' by dividing 'A' by 'B'
+uk_df$Prop_touch <- uk_df$K_all_touch / uk_df$K_all
+
+library(dplyr)
+
+#choose one
+values_to_replace <- c("pnknown", "hnknown", "unknownh", "unknowng", "unknownyed") #unknown
+values_to_replace2 <- c("oervice") #service
+values_to_replace3 <- c("studenthild") #schoolchild
+values_to_replace4 <- c("studentg", "studenth","studentyed","studentol","studentin" ) #studentchild
+values_to_replace5 <- c("tublic" ) #public
+
+# Replace values
+uk_df <- uk_df %>%
+  mutate(P_new_occupation_str = case_when(
+    P_new_occupation_str %in% values_to_replace ~ "unknown",
+    TRUE ~ P_new_occupation_str
+  ))
+
+# Replace values
+uk_df <- uk_df %>%
+  mutate(P_new_occupation_str = case_when(
+    P_new_occupation_str %in% values_to_replace2 ~ "service",
+    TRUE ~ P_new_occupation_str
+  ))
+
+# Replace values
+uk_df <- uk_df %>%
+  mutate(P_new_occupation_str = case_when(
+    P_new_occupation_str %in% values_to_replace3 ~ "schoolchild",
+    TRUE ~ P_new_occupation_str
+  ))
+
+# Replace values
+uk_df <- uk_df %>%
+  mutate(P_new_occupation_str = case_when(
+    P_new_occupation_str %in% values_to_replace4 ~ "studentchild",
+    TRUE ~ P_new_occupation_str
+  ))
+
+# Replace values
+uk_df <- uk_df %>%
+  mutate(P_new_occupation_str = case_when(
+    P_new_occupation_str %in% values_to_replace5 ~ "public",
+    TRUE ~ P_new_occupation_str
+  ))
+
+
+
+uk_df$P_new_occupation_str = factor( uk_df$P_new_occupation_str, 
+                      levels=c("unemployed", "office", "home", "public","unknown", "research",
+                               "retired", "service", "entertain",
+                               "teaching", "transport", "mechanic", "student",
+                               "schoolchild", "labour", "preschool",
+                               "studentchild", "health")
+                      )
+
+unique(uk_df$sex)
+uk_df$sex = factor(uk_df$sex, levels=c("Female", "Male"))
+
+
+
+uk_df$ageg <- ifelse(uk_df$ageg == "Oct-14", "10-14", uk_df$ageg)
+uk_df$ageg <- ifelse(uk_df$ageg == "05-Sep", "05-09", uk_df$ageg)
+
+uk_df_clean <- na.omit(uk_df, cols = "Index.of.Multiple.Deprivation.Rank",
+                       "P_occupation_str", "sex")
+
+uk_df_clean <- uk_df_clean %>%
+  filter(P_age != -1)
+
+summary(uk_df_clean$P_new_occupation_str)
+
+hist( uk_df_clean$Prop_touch, 
+      breaks=20, 
+      xlab="Proportion", ylab="Frequency", 
+      main="Proportion touched in UK" 
+)
+
+
+boxplot(Prop_touch ~ P_new_occupation_str, data = uk_df_clean,
+        varwidth = TRUE,
+        xlab= "",
+        ylab="proportion",
+        main = "Box Plot by occupation UK",
+        las=2)
+
+
+boxplot(Prop_touch ~ ageg, data = uk_df_clean,
+        varwidth = TRUE,
+        xlab= "",
+        ylab="proportion touch",
+        main = "Box Plot by age UK",
+        las=2)
+########################################################################
+library(dplyr)
+library(tidyverse)
+uk_df_clean2 <- select(uk_df_clean, 
+                       K_all_touch, 
+                       K_all, 
+                       P_household_size, 
+                       P_age, 
+                       sex, 
+                       Index.of.Multiple.Deprivation.Decile, 
+                       P_new_occupation_str)
+#####################################################################
+library(dplyr)
+
+cap_outliers_iqr <- function(x, lower_cap = NA, upper_cap = NA) {
+  if (is.numeric(x)) {
+    Q1 <- quantile(x, 0.25)
+    Q3 <- quantile(x, 0.75)
+    IQR <- IQR(x)
+    
+    # Caps
+    x[x < Q1 - 1.5*IQR] <- lower_cap
+    x[x > Q3 + 1.5*IQR] <- upper_cap
+    
+    return(x)
+  } else {
+    return(x)
+  }
+}
+
+data_capped <- uk_df_clean2 %>%
+  mutate_if(is.numeric, cap_outliers_iqr, lower_cap = 1, upper_cap = 300)
+#####################################################################
+library(dplyr)
+
+remove_outliers_iqr <- function(x) {
+  if (is.numeric(x)) {
+    Q1 <- quantile(x, 0.25)
+    Q3 <- quantile(x, 0.75)
+    IQR <- IQR(x)
+    x[x < Q1 - 1.5*IQR | x > Q3 + 1.5*IQR] <- NA
+    return(x)
+  } else {
+    return(x)
+  }
+}
+
+
+data_cleaned <- uk_df_clean2 %>%
+  mutate_if(is.numeric, remove_outliers_iqr)
+
+# Remove rows
+data_cleaned <- na.omit(data_cleaned)
+##########################################################
+library(dplyr)
+
+# winsorize
+winsorize_data <- function(x, lower_tail = 0.05, upper_tail = 0.05) {
+  if (is.numeric(x)) {
+    q_lower <- quantile(x, lower_tail)
+    q_upper <- quantile(x, 1 - upper_tail)
+    
+    x[x < q_lower] <- q_lower
+    x[x > q_upper] <- q_upper
+    
+    return(x)
+  } else {
+    return(x)
+  }
+}
+
+
+data_winsorized <- uk_df_clean2 %>%
+  mutate_if(is.numeric, winsorize_data, lower_tail = 0.05, upper_tail = 0.05)
+#############################################################################
+
+model <- glm(K_all_touch ~ offset(log(K_all)) + P_household_size + P_age  + 
+               sex + Index.of.Multiple.Deprivation.Decile + P_new_occupation_str,
+             data = uk_df_clean2, # data selection
+             family = poisson())
+
+model_summary = summary(model)
+model_summary
+
+library(performance)
+check_overdispersion(model)
+
+exp(coef(model))
+par(mfrow = c(2, 2))
+plot(model)
+
+hist( model$residuals )
+
+
+model2 <- glm(K_all_touch ~ offset(log(K_all)) + P_household_size + P_age  + 
+               sex + Index.of.Multiple.Deprivation.Decile + P_new_occupation_str,
+             data = uk_df_clean2, #data selection
+             family = quasipoisson())
+
+model2_summary = summary(model2)
+model2_summary
+
+
+check_overdispersion(model2)
+
+exp(coef(model2))
+par(mfrow = c(2, 2))
+plot(model2)
+hist(model2$residuals)
+#################################################################
+library(MASS)
+model3 <- glm.nb(K_all_touch ~ offset(log(K_all)) + P_household_size + P_age + 
+                  sex + Index.of.Multiple.Deprivation.Decile + P_new_occupation_str,
+                data = uk_df_clean2) # data selection
+model3_summary = summary(model3)
+model3_summary
+
+check_overdispersion(model3)
+########################################################################
+
+# forest plot
+library(forestplot)
+
+coefs <- model2_summary$coefficients            #model selection
+ci_lower <- coefs[, 1] - 1.96 * coefs[, 2]
+ci_upper <- coefs[, 1] + 1.96 * coefs[, 2]
+
+forest_data <- data.frame(
+  label = rownames(coefs),
+  mean = round(coefs[, 1], 4),
+  Std.err = round(coefs[, 2], 4),
+  Tvalue = round(coefs[, 3], 4),
+  Pvalue = round(coefs[, 4], 4),
+  lower = round(ci_lower, 4),
+  upper = round(ci_upper, 4)
+)
+
+forestplot(forest_data, 
+           labeltext = forest_data$label, 
+           mean = forest_data$mean,
+           lower = forest_data$lower, 
+           upper = forest_data$upper, 
+           xlab = "Coefficient Estimate", 
+           colgap = unit(4, "mm"), 
+           xticks = seq(-2, 2, by = 0.5), 
+           lineheight = "auto", 
+           lwd.ci = 1.5, 
+           lwd.xaxis = 1, 
+           lty.ci = "solid",
+           col = fpColors(box = "orange",
+                          lines = "orange",
+                          zero = "gray")
+)
+
+###############################################################
+library(tidyverse)
+
+model_coefs <- model2_summary$coefficients #model selection
+model_coefs <- as.data.frame(model_coefs)
+
+model_coefs$variable <- rownames(model_coefs)
+model_coefs$p_value <- model_coefs[, 4]
+model_coefs$ci_lower <- model_coefs[, 1] - 1.96 * model_coefs[, 2]
+model_coefs$ci_upper <- model_coefs[, 1] + 1.96 * model_coefs[, 2]
+
+model_coefs <- model_coefs %>% 
+  rename(estimate = Estimate, std_error = `Std. Error`)
+
+ggplot(model_coefs, aes(x = variable, y = estimate, ymin = ci_lower, ymax = ci_upper)) +
+  geom_pointrange(aes(color = p_value < 0.05), size = 1) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  coord_flip() +
+  labs(x = "Variable", y = "Coefficient Estimate") +
+  theme_minimal() +
+  scale_color_manual(values = c("gray", "skyblue4"))
+##################################################################
+library(tidyverse)
+
+model_coefs <- model2_summary$coefficients #model selection
+model_coefs <- as.data.frame(model_coefs)
+
+model_coefs$variable <- rownames(model_coefs)
+model_coefs$p_value <- model_coefs[, 4]
+model_coefs$ci_lower <- model_coefs[, 1] - 1.96 * model_coefs[, 2]
+model_coefs$ci_upper <- model_coefs[, 1] + 1.96 * model_coefs[, 2]
+
+model_coefs <- model_coefs %>%
+  rename(estimate = Estimate, std_error = `Std. Error`)
+
+#forest plot
+ggplot(model_coefs, aes(x = variable, y = estimate, ymin = ci_lower, ymax = ci_upper)) +
+  geom_pointrange(aes(color = p_value < 0.05), size = 1) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(label = round(estimate, 4)), vjust = 1.5, size = 3) +
+  coord_flip() +
+  labs(x = "Variable", y = "Coefficient Estimate") +
+  theme_minimal() +
+  scale_color_manual(values = c("gray", "skyblue4"))
