@@ -10,7 +10,7 @@ xlab("Participant Age (years)")+
 hist1
 
   ggplot(uk_df_clean)+
-  geom_jitter(aes(x=P_new_occupation_str, y=log(K_all_touch +1), colour =P_age, alpha = 0.1), height = 0.2, width = 0.25)+
+  geom_jitter(aes(x=P_new_occupation_str, y=log(K_all_touch +1), colour =P_age, alpha = 0.15), height = 0.2, width = 0.25)+
   theme(axis.text.x = element_text(angle = 90)) +
   xlab("Occupation Category")+
   ylab("log(touch contacts per day +1)") +
