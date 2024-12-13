@@ -46,4 +46,11 @@ xlab("Participant Age (years)")+
 xlab("log (Number of Touch Contacts per Day +1)")+
   ylab("Count") +
   ggtitle("Distribution of Touch Contacts per Day")
+
+ggplot(uk_df_clean)+
+  geom_histogram(aes(K_all_touch), binwidth = 0.24)+
+xlab("Number of Touch Contacts per Day")+
+  ylab("Count") +
+  ggtitle("Distribution of Touch Contacts per Day")+
+  scale_x_log10()
   
