@@ -1,4 +1,32 @@
 library(ggplot2)
+
+#Table formation
+
+tmean <- mean(uk_df_clean$K_all_touch) #touch
+tsd<- sd(uk_df_clean$K_all_touch)
+trange <- range(uk_df_clean$K_all_touch)
+n1 = c( "Touch Contacts", tmean, tsd, trange)
+
+amean <- mean(uk_df_clean$P_age)  #age
+asd<- sd(uk_df_clean$P_age)
+arange <- range(uk_df_clean$P_age)
+n2 = c( "Age", amean, asd, arange)
+
+hmean <- mean(uk_df_clean$P_household_size) #Household size
+hsd<- sd(uk_df_clean$P_household_size)
+hrange <- range(uk_df_clean$P_household_size)
+n3 = c( "Household Size", hmean, hsd, hrange)
+
+imean <- mean(uk_df_clean$`Index of Multiple Deprivation Decile`) #Index of Multiple Deprivation Decile
+isd<- sd(uk_df_clean$`Index of Multiple Deprivation Decile`)
+irange <- range(uk_df_clean$`Index of Multiple Deprivation Decile`)
+n4 = c( "IMDD", imean, isd, irange)
+
+n = c("Variable", "mean", "sd", "min", "max")
+
+nn = rbind(n, n1, n2, n3, n4)
+
+##Graphs of variables 
 hist1<- ggplot(uk_df_clean)+
   geom_jitter(aes(y = log(K_all_touch +1), x = P_age, colour = IMDD), height = 0.2)+
 xlab("Participant Age (years)")+
